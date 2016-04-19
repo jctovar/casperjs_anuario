@@ -19,7 +19,7 @@ var casper = require('casper').create({
 });
 
 casper.userAgent('Tezcatlipoca/0.9.34 (the nahuatl spiderbot)');
-// the link object
+
 casper.start('http://campus.iztacala.unam.mx/prosap/informa.cgi', function() {
     links = this.evaluate(getLinks);
     var len = links.length;
@@ -27,10 +27,7 @@ casper.start('http://campus.iztacala.unam.mx/prosap/informa.cgi', function() {
 });
 
 casper.then(function() {
-    //this.echo(JSON.stringify(links));
     for ( var i = 0; i < links.length; i++) {
-        
-        
           casper.thenOpen('http://campus.iztacala.unam.mx/prosap/informa.cgi?id=' + links[i] + '&detalla=Detalles', function() {
             var element = {};
             
@@ -79,15 +76,30 @@ casper.then(function() {
             element.course_url = casper.evaluate(function() { // ok
                 return document.querySelector("body > table:nth-child(2) > tbody > tr > td > div > form > input[type=\"hidden\"]").getAttribute('value');
             });
-            
-            //this.echo(JSON.stringify(element));
+
             data.push(element); 
           });
     }
 });
 
+casper.then(function() {
+    if (data.length > 0 ) {
+        casper.open('https://galadriel.ired.unam.mx:8100/courses?account_key=123', {
+        method: 'delete'
+        });
+    }
+});
+
+casper.then(function() {
+    for ( var i = 0; i < data.length; i++) {
+        var obj = data[i];
+          casper.thenOpen('https://galadriel.ired.unam.mx:8100/courses?account_key=123', {
+              method: 'post',
+              data:   obj
+          });
+    }
+});
+
 casper.run(function() {
-    // echo results in some pretty fashion
-    fs.write('cursos.json', JSON.stringify(data), 'w');
     this.exit();
 });
